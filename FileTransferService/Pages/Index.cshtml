@@ -1,0 +1,155 @@
+﻿@page
+@model FileTransferService.Pages.IndexModel
+@{
+    ViewData["Title"] = "Передача файлов";
+}
+
+<!DOCTYPE html>
+<html>
+<head>
+    <meta charset="utf-8" />
+    <title>Передача файлов</title>
+    <!-- Подключение jQuery -->
+    <script src="https://code.jquery.com/jquery-3.6.0.min.js"></script>
+</head>
+<body>
+    <h1>Передача файлов</h1>
+
+    <form id="uploadForm" method="post" enctype="multipart/form-data">
+        <div>
+            <label for="sourceServer">Сервер источник:</label>
+            <input type="text" id="sourceServer" name="SourceServer" required />
+        </div>
+        <div>
+            <label for="sourcePath">Путь к файлам на сервере источнике:</label>
+            <input type="text" id="sourcePath" name="SourcePath" required />
+        </div>
+        <div>
+            <label for="destinationServer">Сервер приемник:</label>
+            <input type="text" id="destinationServer" name="DestinationServer" required />
+        </div>
+        <div>
+            <label for="destinationPath">Путь к файлам на сервере приемнике:</label>
+            <input type="text" id="destinationPath" name="DestinationPath" required />
+        </div>
+        <div>
+            <label for="sourceFtp">IP адрес и порт FTP сервера источник (формат: ip:port):</label>
+            <input type="text" id="sourceFtp" name="SourceFtp" required />
+        </div>
+        <div>
+            <label for="destinationFtp">IP адрес и порт FTP сервера приемник (формат: ip:port):</label>
+            <input type="text" id="destinationFtp" name="DestinationFtp" required />
+        </div>
+        <div>
+            <label for="files">Выбрать файлы:</label>
+            <input type="file" id="files" name="files" multiple required />
+        </div>
+        <div>
+            <button type="button" onclick="uploadFiles()">Передать файлы</button>
+        </div>
+    </form>
+
+    <button onclick="checkFtpConnection(1)">Проверить подключение к серверу 1</button>
+    <button onclick="checkFtpConnection(2)">Проверить подключение к серверу 2</button>
+    <button onclick="loadLogs()">Загрузить логи</button>
+    <button onclick="clearLogs()">Очистить логи</button>
+
+    <h2>Логи</h2>
+<pre id="logs"></pre>
+
+    <div id="fileSection" style="display:none;">
+        <h2>Файлы на сервере</h2>
+        <ul id="fileList"></ul>
+    </div>
+
+    <script>
+        async function checkFtpConnection(server) {
+            const ftpField = server === 1 ? document.getElementById('sourceFtp').value : document.getElementById('destinationFtp').value;
+            const [ftpServerIp, ftpPort] = ftpField.split(':');
+
+            if (!ftpServerIp || !ftpPort) {
+                alert("Пожалуйста, заполните IP адрес и порт FTP сервера в формате ip:port.");
+                return;
+            }
+
+            try {
+                const response = await fetch(`/api/filetransfer/checkftp?server=${server}&ftpServerIp=${ftpServerIp}&ftpPort=${ftpPort}`);
+                const result = await response.text();
+                alert(result);
+                if (response.ok) {
+                    loadFiles(server);
+                }
+            } catch (error) {
+                alert("Ошибка при проверке подключения к FTP серверу: " + error.message);
+            }
+        }
+
+        async function uploadFiles() {
+            const form = document.getElementById('uploadForm');
+            const formData = new FormData(form);
+
+            try {
+                const response = await fetch('/api/filetransfer/upload', {
+                    method: 'POST',
+                    body: formData
+                });
+
+                const result = await response.text();
+                alert(result);
+            } catch (error) {
+                alert("Ошибка при передаче файлов: " + error.message);
+            }
+        }
+
+        async function loadLogs() {
+            try {
+                const response = await fetch('/api/filetransfer/logs');
+                const logs = await response.json();
+                const logsContainer = document.getElementById('logs');
+                logsContainer.textContent = logs.join('\n');
+            } catch (error) {
+                alert("Ошибка при загрузке логов: " + error.message);
+            }
+        }
+
+        async function clearLogs() {
+            try {
+                const response = await fetch('/api/filetransfer/clearlogs', {
+                    method: 'POST'
+                });
+
+                const result = await response.text();
+                alert(result);
+
+                document.getElementById('logs').textContent = '';
+            } catch (error) {
+                alert("Ошибка при очистке логов: " + error.message);
+            }
+        }
+
+        async function loadFiles(server) {
+            const sourcePath = document.getElementById('sourcePath').value;
+            const destinationPath = document.getElementById('destinationPath').value;
+
+            try {
+                const response = await fetch(`/api/filetransfer/files?server=${server}&sourcePath=${encodeURIComponent(sourcePath)}&destinationPath=${encodeURIComponent(destinationPath)}`);
+                const files = await response.json();
+                if (Array.isArray(files)) {
+                    const fileList = document.getElementById('fileList');
+                    fileList.innerHTML = '';
+                    files.forEach(file => {
+                        const listItem = document.createElement('li');
+                        listItem.textContent = `${file.name} (Размер: ${file.size} байт, Дата модификации: ${file.modifiedDate})`;
+                        fileList.appendChild(listItem);
+                    });
+                    document.getElementById('fileSection').style.display = 'block';
+                } else {
+                    alert("Ошибка при загрузке файлов: данные не являются массивом.");
+                }
+            } catch (error) {
+                alert("Ошибка при загрузке файлов: " + error.message);
+            }
+        }
+    </script>
+</body>
+</html>

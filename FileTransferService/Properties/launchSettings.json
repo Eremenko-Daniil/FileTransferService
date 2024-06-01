@@ -1,0 +1,57 @@
+{
+  "iisSettings": {
+    "windowsAuthentication": true,
+    "anonymousAuthentication": false,
+    "iisExpress": {
+      "applicationUrl": "http://localhost:2660",
+      "sslPort": 44307
+    }
+  },
+  "profiles": {
+    "FileTransferService": {
+      "commandName": "Project",
+      "dotnetRunMessages": true,
+      "launchBrowser": true,
+      "applicationUrl": "https://localhost:7280;http://localhost:5032",
+      "environmentVariables": {
+        "ASPNETCORE_ENVIRONMENT": "Development"
+      }
+    },
+    "IIS Express": {
+      "commandName": "IISExpress",
+      "launchBrowser": true,
+      "applicationUrl": "http://localhost:2660",
+      "sslPort": 44307,
+      "environmentVariables": {
+        "ASPNETCORE_ENVIRONMENT": "Development"
+      },
+      "windowsAuthentication": true,
+      "anonymousAuthentication": false
+    }
+  }
+  {
+    "Serilog": {
+      "MinimumLevel": {
+        "Default": "Information",
+        "Override": {
+          "Microsoft": "Warning",
+          "System": "Warning"
+        }
+      },
+      "WriteTo": [
+        {
+          "Name": "Console"
+        },
+        {
+          "Name": "File",
+          "Args": {
+            "path": "Logs/log-.txt",
+            "rollingInterval": "Day",
+            "shared": true
+          }
+        }
+      ]
+    },
+    "AllowedHosts": "*"
+  }
+}
